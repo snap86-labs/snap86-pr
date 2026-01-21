@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snap86 Brand Asset Generator</title>
+    <style>
+        :root {
+            --cream: #FFF3DE;
+            --coral: #F76D28;
+            --midnight: #000A1B;
+            --font-primary: 'Space Grotesk', sans-serif;
+            --font-secondary: 'Instrument Sans', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-secondary);
+            background-color: var(--cream);
+            color: var(--midnight);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-family: var(--font-primary);
+            color: var(--coral);
+            margin-bottom: 30px;
+        }
+
+        .container {
+            display: flex;
+            gap: 40px;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 300px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input[type="number"],
+        input[type="file"],
+        input[type="text"] {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+
+        .color-presets {
+            display: flex;
+            gap: 10px;
+        }
+
+        .color-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .preview-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 12px;
+            min-width: 400px;
+            min-height: 400px;
+            justify-content: center;
+            overflow: auto;
+        }
+
+        canvas {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            max-height: 600px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        button.download-btn {
+            background-color: var(--coral);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+
+        button.download-btn:hover {
+            background-color: #d95a1c;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Instrument+Sans:wght@400;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <h1>Snap86 Asset Generator</h1>
+
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="svgUpload">Upload Logo (SVG)</label>
+                <input type="file" id="svgUpload" accept=".svg">
+            </div>
+
+            <div class="control-group">
+                <label>Dimensions</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="width" value="1024" placeholder="Width">
+                    <input type="number" id="height" value="1024" placeholder="Height">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="padding">Padding (%)</label>
+                <input type="number" id="padding" value="20" min="0" max="80">
+            </div>
+
+            <div class="control-group">
+                <label>Background Color</label>
+                <div class="color-presets">
+                    <button class="color-btn" style="background: #FFF3DE;" onclick="setColor('#FFF3DE')"
+                        title="Cream"></button>
+                    <button class="color-btn" style="background: #F76D28;" onclick="setColor('#F76D28')"
+                        title="Coral"></button>
+                    <button class="color-btn" style="background: #000A1B;" onclick="setColor('#000A1B')"
+                        title="Midnight"></button>
+                    <button class="color-btn"
+                        style="background: transparent; background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 10px 10px;"
+                        onclick="setColor('transparent')" title="Transparent"></button>
+                </div>
+                <input type="text" id="bgColor" value="#FFF3DE">
+            </div>
+
+            <button class="download-btn" onclick="downloadPNG()">Download PNG</button>
+        </div>
+
+        <div class="preview-area">
+            <canvas id="canvas"></canvas>
+            <p id="placeholder-text" style="color: #999;">Preview will appear here</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const svgUpload = document.getElementById('svgUpload');
+        const widthInput = document.getElementById('width');
+        const heightInput = document.getElementById('height');
+        const paddingInput = document.getElementById('padding');
+        const bgColorInput = document.getElementById('bgColor');
+        const placeholderText = document.getElementById('placeholder-text');
+
+        let currentImg = null;
+
+        function setColor(color) {
+            bgColorInput.value = color;
+            draw();
+        }
+
+        function draw() {
+            if (!currentImg) return;
+
+            const width = parseInt(widthInput.value) || 1024;
+            const height = parseInt(heightInput.value) || 1024;
+            const paddingPercent = parseInt(paddingInput.value) || 0;
+            const bgColor = bgColorInput.value;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Background
+            if (bgColor && bgColor !== 'transparent') {
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, width, height);
+            } else {
+                ctx.clearRect(0, 0, width, height);
+            }
+
+            // Draw Image
+            const padding = Math.min(width, height) * (paddingPercent / 100);
+            const drawWidth = width - (padding * 2);
+            const drawHeight = height - (padding * 2);
+
+            // Aspect Ratio fit
+            const imgAspect = currentImg.width / currentImg.height;
+            const canvasAspect = drawWidth / drawHeight;
+
+            let finalWidth, finalHeight;
+
+            if (imgAspect > canvasAspect) {
+                finalWidth = drawWidth;
+                finalHeight = drawWidth / imgAspect;
+            } else {
+                finalHeight = drawHeight;
+                finalWidth = drawHeight * imgAspect;
+            }
+
+            const x = (width - finalWidth) / 2;
+            const y = (height - finalHeight) / 2;
+
+            ctx.drawImage(currentImg, x, y, finalWidth, finalHeight);
+
+            placeholderText.style.display = 'none';
+        }
+
+        svgUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    currentImg = img;
+                    draw();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        [widthInput, heightInput, paddingInput, bgColorInput].forEach(input => {
+            input.addEventListener('input', draw);
+        });
+
+        function downloadPNG() {
+            if (!currentImg) {
+                alert('Please upload an SVG first.');
+                return;
+            }
+            const link = document.createElement('a');
+            link.download = 'snap86-brand-asset.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Initialize with default dimensions
+        canvas.width = 0;
+        canvas.height = 0;
+    </script>
+</body>
+
+</html>
