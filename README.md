@@ -61,7 +61,7 @@ Used for code, technical content, and data displays.
 
 ## Tools
 
-- **[Asset Generator](tools/logo-generator/index.html)** – a simple tool to generate branded PNGs from SVGs with custom backgrounds and padding.
+- **[Asset Generator](https://snap86-labs.github.io/snap86-pr/tools/logo-generator/)** – Generate branded PNGs from SVGs with custom backgrounds and padding (available online, no installation required)
 
 ## Usage Guidelines
 
